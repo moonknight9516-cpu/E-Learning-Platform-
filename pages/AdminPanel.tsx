@@ -29,9 +29,9 @@ const AdminPanel: React.FC = () => {
           slug: (currentCourse.title || '').toLowerCase().replace(/ /g, '-'),
           description: currentCourse.description || '',
           category: currentCourse.category || 'Development',
-          difficulty: currentCourse.difficulty || 'Beginner',
+          difficulty: (currentCourse.difficulty as any) || 'Beginner',
           price: Number(currentCourse.price) || 0,
-          thumbnailUrl: currentCourse.thumbnailUrl || 'https://picsum.photos/800/450',
+          thumbnailUrl: currentCourse.thumbnailUrl || 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=800',
           lessons: currentCourse.lessons || []
         });
       }

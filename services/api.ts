@@ -24,6 +24,15 @@ if (!localStorage.getItem(STORAGE_KEYS.COURSES)) setStorage(STORAGE_KEYS.COURSES
 if (!localStorage.getItem(STORAGE_KEYS.USERS)) setStorage(STORAGE_KEYS.USERS, SEED_USERS);
 if (!localStorage.getItem(STORAGE_KEYS.ENROLLMENTS)) setStorage(STORAGE_KEYS.ENROLLMENTS, []);
 
+export interface CourseQuery {
+  category?: string;
+  search?: string;
+  difficulty?: string;
+  sortBy?: 'newest' | 'oldest' | 'price-low' | 'price-high' | 'title';
+  page?: number;
+  limit?: number;
+}
+
 export const api = {
   // Auth
   getCurrentUser: async (): Promise<User | null> => {
@@ -58,13 +67,53 @@ export const api = {
   },
 
   // Courses
-  getCourses: async (query?: { category?: string; search?: string }): Promise<Course[]> => {
+  getCourses: async (query?: CourseQuery): Promise<Course[]> => {
     let courses = getStorage<Course[]>(STORAGE_KEYS.COURSES, []);
-    if (query?.category) courses = courses.filter(c => c.category === query.category);
+    
+    // 1. Filtering
+    if (query?.category && query.category !== 'All') {
+      courses = courses.filter(c => c.category === query.category);
+    }
+    
+    if (query?.difficulty && query.difficulty !== 'All') {
+      courses = courses.filter(c => c.difficulty === query.difficulty);
+    }
+    
     if (query?.search) {
       const s = query.search.toLowerCase();
-      courses = courses.filter(c => c.title.toLowerCase().includes(s) || c.description.toLowerCase().includes(s));
+      courses = courses.filter(c => 
+        c.title.toLowerCase().includes(s) || 
+        c.description.toLowerCase().includes(s) ||
+        c.category.toLowerCase().includes(s)
+      );
     }
+
+    // 2. Sorting
+    if (query?.sortBy) {
+      courses = [...courses].sort((a, b) => {
+        switch (query.sortBy) {
+          case 'newest':
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          case 'oldest':
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          case 'price-low':
+            return a.price - b.price;
+          case 'price-high':
+            return b.price - a.price;
+          case 'title':
+            return a.title.localeCompare(b.title);
+          default:
+            return 0;
+        }
+      });
+    }
+
+    // 3. Pagination (Implementation for future scale)
+    if (query?.page && query?.limit) {
+      const start = (query.page - 1) * query.limit;
+      courses = courses.slice(start, start + query.limit);
+    }
+    
     return courses;
   },
 
@@ -126,18 +175,22 @@ export const api = {
     const index = enrollments.findIndex(e => e.id === enrollmentId);
     if (index === -1) throw new Error('Enrollment not found');
 
-    const enrollment = enrollments[index];
-    enrollment.progress[lessonId] = completed;
+    // Immutable update for robust React state detection
+    const enrollment = { 
+      ...enrollments[index], 
+      progress: { ...enrollments[index].progress, [lessonId]: completed } 
+    };
 
-    // Calculate percentage
+    // Calculate percentage based on total lessons in the course
     const courses = getStorage<Course[]>(STORAGE_KEYS.COURSES, []);
     const course = courses.find(c => c.id === enrollment.courseId);
-    if (course) {
+    if (course && course.lessons.length > 0) {
       const completedCount = Object.values(enrollment.progress).filter(Boolean).length;
       enrollment.percentage = Math.round((completedCount / course.lessons.length) * 100);
     }
 
-    setStorage(STORAGE_KEYS.ENROLLMENTS, enrollments);
+    enrollments[index] = enrollment;
+    setStorage(STORAGE_KEYS.ENROLLMENTS, [...enrollments]);
     return enrollment;
   }
 };

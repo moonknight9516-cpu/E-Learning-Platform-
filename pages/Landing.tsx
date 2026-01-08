@@ -30,8 +30,8 @@ const Landing: React.FC = () => {
                 <div className="absolute -top-10 -left-10 w-72 h-72 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
                 <div className="absolute -bottom-10 -right-10 w-72 h-72 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
                 <img 
-                  src="https://picsum.photos/seed/elearning/800/600" 
-                  alt="Students learning" 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200" 
+                  alt="Students collaborating on projects" 
                   className="relative rounded-3xl shadow-2xl border-4 border-white transform hover:rotate-1 transition-transform duration-500"
                 />
               </div>
